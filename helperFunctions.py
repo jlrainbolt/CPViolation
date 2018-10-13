@@ -53,7 +53,7 @@ def sign(x):
 ####################
 
 # Returns high- and low-mass pairs for same-flavor final state
-# Takes TLorentzVectors (sorted by decreasing momentum) and charges (dict)
+# Takes TLorentzVectors (list) and charges (dict)
 # Pairing is determined by maximizing mass difference
 
 
@@ -62,8 +62,10 @@ def GetMassPairs(p4_list, q_dict):
     ##  INITIALIZE  ##
 
     # Assign highest-p lepton as lep1, which is always in pair 1
+    p4_list.sort(key=lambda fourvec: fourvec.P(), reverse=True)
+
     lep1p4, lep1q = p4_list[0], q_dict[p4_list[0]]
-    pair1_list, pair2_list = [lep1p4], []
+    p1_list, p2_list = [lep1p4], []
 
     config = 1
 
@@ -76,26 +78,26 @@ def GetMassPairs(p4_list, q_dict):
     # Find subleading lepton of pair 1
     for lep in p4_list:
         if q_dict[lep] != lep1q:
-            pair1_list.append(lep)
+            p1_list.append(lep)
             break
 
 
     # Assemble pair 2
     for lep in p4_list:
-        if lep not in pair1_list:
-            pair2_list.append(lep)
+        if lep not in p1_list:
+            p2_list.append(lep)
 
 
     # Find difference between masses of pairs and assign them
-    pair1p4, pair2p4 = GetSum(pair1_list), GetSum(pair2_list)
-    mass_diff_1 = pair1p4.M() - pair2p4.M()
+    pair1, pair2 = GetSum(p1_list), GetSum(p2_list)
+    mass_diff_1 = pair1.M() - pair2.M()
 
     if mass_diff_1 > 0:
-        large_pair, small_pair = pair1p4, pair2p4
-        large_list, small_list = pair1_list, pair2_list
+        p_pair, k_pair = pair1, pair2
+        p_list, k_list = p1_list[:], p2_list[:]
     else:
-        large_pair, small_pair = pair2p4, pair1p4
-        large_list, small_list = pair2_list, pair1_list
+        k_pair, p_pair = pair1, pair2
+        k_list, p_list = p1_list[:], p2_list[:]
 
 
 
@@ -103,15 +105,15 @@ def GetMassPairs(p4_list, q_dict):
 
     # Swap leptons that are not SS as lep1
     # (i.e. look for pair 2 lepton with SS as subleading lep of pair 1)
-    for i in range(len(pair2_list)):
-        if q_dict[pair2_list[i]] == q_dict[pair1_list[1]]:
-            pair2_list[i], pair1_list[1] = pair1_list[1], pair2_list[i]
+    for i in range(len(p2_list)):
+        if q_dict[p2_list[i]] == q_dict[p1_list[1]]:
+            p2_list[i], p1_list[1] = p1_list[1], p2_list[i]
             break
 
 
     # Reassign pair momenta
-    pair1p4, pair2p4 = GetSum(pair1_list), GetSum(pair2_list)
-    mass_diff_2 = pair1p4.M() - pair2p4.M()
+    pair1, pair2 = GetSum(p1_list), GetSum(p2_list)
+    mass_diff_2 = pair1.M() - pair2.M()
 
 
     # If this config has larger mass difference, reassign returned values
@@ -119,139 +121,43 @@ def GetMassPairs(p4_list, q_dict):
         config = 2
 
         if mass_diff_2 > 0:
-            large_pair, small_pair = pair1p4, pair2p4
-            large_list, small_list = pair1_list, pair2_list
+            p_pair, k_pair = pair1, pair2
+            p_list, k_list = p1_list[:], p2_list[:]
         else:
-            large_pair, small_pair = pair2p4, pair1p4
-            large_list, small_list = pair2_list, pair1_list
+            k_pair, p_pair = pair1, pair2
+            k_list, p_list = p1_list[:], p2_list[:]
+
+
+
+    ##  CHARGES  ##
+
+    if q_dict[p_list[0]] > 0:
+        p_plus, p_minus = p_list[0], p_list[1]
+    else:
+        p_minus, p_plus = p_list[0], p_list[1]
+
+    if q_dict[k_list[0]] > 0:
+        k_plus, k_minus = k_list[0], k_list[1]
+    else:
+        k_minus, k_plus = k_list[0], k_list[1]
 
 
 
     ##  DEBUG  ##
 
-#   if (False):
-    if (small_pair.M() < 4):
+    if (True):
         print("Configuration", config)
         print(mass_diff_1, "(1)", mass_diff_2, "(2)")
-        print("\nPair 1: mass", large_pair.M())
-        print(pair1_list[0], q_dict[pair1_list[0]])
-        print(pair1_list[1], q_dict[pair1_list[1]])
-        print("\nPair 2: mass", small_pair.M())
-        print(pair2_list[0], q_dict[pair2_list[0]])
-        print(pair2_list[1], q_dict[pair2_list[1]])
+        print("\npp mass:", p_pair.M(), (p_plus + p_minus).M())
+        print(p_list[0].P(), q_dict[p_list[0]])
+        print(p_list[1].P(), q_dict[p_list[1]])
+        print("\nkk mass:", k_pair.M(), (k_plus + k_minus).M())
+        print(k_list[0].P(), q_dict[k_list[0]])
+        print(k_list[1].P(), q_dict[k_list[1]])
         print("\n")
         sys.stdout.flush()
 
 
 
     ##  RETURN ##
-    return large_pair, small_pair, large_list, small_list
-
-
-
-
-########################
-#  GET_TRIPLE_PRODUCT  #
-########################
-
-# Returns the scalar triple product psi = p_c . (p_a * p_b)
-#   and the quantity sin(phi) = (n_ab * n_cd) . z
-#
-# Takes TLorentzVectors (sorted by decreasing momentum) and charges (dict)
-# Choose p_a and p_c to be antileptons with |p_a| > |p_c|
-# Choose p_b as lepton with largest momentum
-
-
-def GetTripleProduct(p4_list, q_dict):
-
-    # Separate leptons by charge
-    plus_leps, minus_leps = [], []
-
-    for lep in p4_list:
-        if q_dict[lep] > 0:
-            plus_leps.append(lep)
-        else:
-            minus_leps.append(lep)
-
-
-    # Debug
-#   if (False):
-    if (len(plus_leps) != 2) or (len(minus_leps) != 2):
-        for lep in plus_leps:
-            print(lep.E(), end=", ")
-        print("\n", end="")
-        for lep in minus_leps:
-            print(lep.E(), end=", ")
-#       print(plus_leps)
-#       print(minus_leps)
-        print("")
-        sys.stdout.flush()
-        return float('nan')
-
-
-    # Assign as TVector3s
-    lepAp3, lepCp3 = plus_leps[0].Vect(), plus_leps[1].Vect()
-    lepBp3, lepDp3 = minus_leps[0].Vect(), minus_leps[1].Vect()
-
-
-    # Calculate normals to planes (a, b) and (c, d)
-    # and direction of p_a + p_b
-    N_ab, N_cd = lepAp3.Cross(lepBp3), lepCp3.Cross(lepDp3)
-    n_ab, n_cd = N_ab.Unit(), N_cd.Unit()
-    z = (lepAp3 + lepBp3).Unit()
-
-
-    # Calculate scalar triple product and sin(phi)
-    psi = lepCp3.Dot(N_ab)
-    phi = N_ab.Angle(N_cd)
-    sin_phi = n_ab.Cross(n_cd).Dot(z)
-
-
-
-    ##  RETURN  ##
-
-    return psi, phi, sin_phi
-
-
-
-##############################
-#  GET_TRIPLE_PRODUCT_PAIRS  #
-##############################
-
-# Returns the scalar triple product psi = p_c . (p_a * p_b)
-#   and the quantity sin(phi) = (n_ab * n_cd) . z
-#
-# Takes TLorentzVector pairs (two-item lists) and charges (dict)
-# Choose p_a and p_b to be + and - q leptons of pair 1
-# Choose p_c and p_d to be + and - q leptons of pair 2
-
-
-def GetTripleProductPairs(p1_leps, p2_leps, q_dict):
-
-    # Assign as TVector3s and check sign
-    lepAp3, lepBp3 = p1_leps[0].Vect(), p1_leps[1].Vect()
-    if q_dict[p1_leps[0]] < 0:
-        lepAp3, lepBp3 = lepBp3, lepAp3
-
-    lepCp3, lepDp3 = p2_leps[0].Vect(), p2_leps[1].Vect()
-    if q_dict[p2_leps[0]] < 0:
-        lepCp3, lepDp3 = lepDp3, lepCp3
-
-
-    # Calculate normals to planes (a, b) and (c, d)
-    # and direction of p_a + p_b
-    N_ab, N_cd = lepAp3.Cross(lepBp3), lepCp3.Cross(lepDp3)
-    n_ab, n_cd = N_ab.Unit(), N_cd.Unit()
-    z = (lepAp3 + lepBp3).Unit()
-
-
-    # Calculate scalar triple product and sin(phi)
-    psi = lepCp3.Dot(N_ab)
-    phi = N_ab.Angle(N_cd)
-    sin_phi = n_ab.Cross(n_cd).Dot(z)
-
-
-
-    ##  RETURN  ##
-
-    return psi, phi, sin_phi
+    return p_plus, p_minus, k_plus, k_minus

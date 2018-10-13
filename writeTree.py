@@ -34,19 +34,19 @@ if __name__ == '__main__':
 
 
     
-    ##  FIT FUNCTION  ##
+#   ##  FIT FUNCTION  ##
 
-    # (for 1/alpha_QED; used to estimate theo. unc.)
+#   # (for 1/alpha_QED; used to estimate theo. unc.)
 
-    # Import "smoothingspline" fit struct from Matlab
-    alpha_inv_p = loadmat("alpha_inv_p.mat")
+#   # Import "smoothingspline" fit struct from Matlab
+#   alpha_inv_p = loadmat("alpha_inv_p.mat")
 
-    # Recreate as piecewise polynomial function
-    # (takes mass; returns 1/alpha)
-    get_alpha_inv = PPoly(alpha_inv_p['coefs'].transpose(), alpha_inv_p['breaks'][0])
+#   # Recreate as piecewise polynomial function
+#   # (takes mass; returns 1/alpha)
+#   get_alpha_inv = PPoly(alpha_inv_p['coefs'].transpose(), alpha_inv_p['breaks'][0])
 
-    # Default MG5 value for 1/alpha_QED
-    aEWM1 = 1.325070e+02
+#   # Default MG5 value for 1/alpha_QED
+#   aEWM1 = 1.325070e+02
 
 
 
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     tree.Branch("z1pdg", z1pdg, "z1pdg/I")
     tree.Branch("z2p4", z2p4)
     tree.Branch("z2pdg", z2pdg, "z2pdg/I")
-    tree.Branch("ttp4", z2p4)
+    tree.Branch("ttp4", ttp4)
 
 
     # Leptons (sorted by momentum in Z CM frame)
@@ -114,9 +114,9 @@ if __name__ == '__main__':
     tree.Branch("p2lpp4", p2lpp4)
 
 
-    # "Weight" from alpha_QED 
-    weight_alphaQED = array("f", [0])
-    tree.Branch("weight_alphaQED", weight_alphaQED, "weight_alphaQED/F")
+#   # "Weight" from alpha_QED 
+#   weight_alphaQED = array("f", [0])
+#   tree.Branch("weight_alphaQED", weight_alphaQED, "weight_alphaQED/F")
 
 
 
@@ -242,10 +242,10 @@ if __name__ == '__main__':
         ###############
 
 
-        ##  WEIGHT  ##
+#       ##  WEIGHT  ##
 
-        # ("default"/"calculated" values of 1/alpha)
-        weight_alphaQED[0] = aEWM1 / get_alpha_inv(pair2.M())
+#       # ("default"/"calculated" values of 1/alpha)
+#       weight_alphaQED[0] = aEWM1 / get_alpha_inv(pair2.M())
 
 
 
