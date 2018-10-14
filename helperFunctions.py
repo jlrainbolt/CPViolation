@@ -145,7 +145,7 @@ def GetMassPairs(p4_list, q_dict):
 
     ##  DEBUG  ##
 
-    if (True):
+    if (False):
         print("Configuration", config)
         print(mass_diff_1, "(1)", mass_diff_2, "(2)")
         print("\npp mass:", p_pair.M(), (p_plus + p_minus).M())

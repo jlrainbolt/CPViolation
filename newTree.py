@@ -30,7 +30,7 @@ if __name__ == '__main__':
     lheName = "unweighted_events_fullSM.lhe"
 
     # Counters
-    n_max = 100
+    n_max = 100000
     if debug:
         n_max = 100
     n_evts = n_4m = n_2m2e = n_2e2m = n_4e = 0
